@@ -12,10 +12,10 @@ import java.util.concurrent.Semaphore;
 import org.openide.util.Exceptions;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.services.TagsManager;
-import org.sleuthkit.autopsy.ingest.FileIngestModule;
+import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModule;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
-import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.HashUtility;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -27,6 +27,23 @@ import org.sleuthkit.datamodel.TskCoreException;
 public class OpentimestampsModule implements DataSourceIngestModule {
     
     public OpentimestampsModule() {
-        
+        int number;
     }
+    
+    @Override
+    public ProcessResult process(Content dataSource, DataSourceIngestModuleProgress progressBar) {
+        int number = 1;
+        return ProcessResult.OK;
+    }
+
+//    @Override
+//    public void shutDown() {
+//        int number = 1;
+//    }
+
+    @Override
+    public void startUp(IngestJobContext context) throws IngestModuleException {
+       int number = 1;
+    }
+   
 }

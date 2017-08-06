@@ -5,14 +5,24 @@
  */
 package org.sleuthkit.autopsy.modules.opentimestamps;
 
+import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettings;
+import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettingsPanel;
+
 /**
  *
  * @author Developer
  */
-public class OpentimestampsJobSettingsPanel extends javax.swing.JPanel implements java.beans.Customizer {
+public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSettingsPanel implements java.beans.Customizer {
     
     private Object bean;
-
+    
+//    private VirusTotalOnlineCheckSettings settings;
+//
+//    VirusTotalOnlineCheckJobSettingsPanel(VirusTotalOnlineCheckSettings settings) {
+//        initComponents();
+//        this.settings = settings;
+//        this.apiKeyTextField.setText(settings.getApiKey());
+//    }
     /**
      * Creates new customizer OpentimestampsJobSettingsPanel
      */
@@ -33,7 +43,12 @@ public class OpentimestampsJobSettingsPanel extends javax.swing.JPanel implement
         setLayout(new java.awt.BorderLayout());
 
     }//GEN-END:initComponents
-
+    
+    @Override
+    public IngestModuleIngestJobSettings getSettings() {
+        return null;
+        //return settings;
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables

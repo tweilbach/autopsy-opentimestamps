@@ -18,7 +18,8 @@ import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettingsPanel;
  *
  * @author Developer
  */
-public class OpentimestampsModuleFactory {
+@ServiceProvider(service = IngestModuleFactory.class)
+public class OpentimestampsModuleFactory implements IngestModuleFactory{
     
     private static final String VERSION_NUMBER = "0.0.1";
 
@@ -58,7 +59,8 @@ public class OpentimestampsModuleFactory {
 
     @Override
     public IngestModuleIngestJobSettingsPanel getIngestJobSettingsPanel(IngestModuleIngestJobSettings settings) {
-        return new OpentimestampsJobSettingsPanel((OpentimestampsSettings) settings);
+        return new OpentimestampsJobSettingsPanel();
+        //return new OpentimestampsJobSettingsPanel((OpentimestampsSettings) settings);
     }
 
     @Override
@@ -79,11 +81,11 @@ public class OpentimestampsModuleFactory {
 
     @Override
     public FileIngestModule createFileIngestModule(IngestModuleIngestJobSettings settings) {
-//        String apiKey = ((VirusTotalOnlineCheckSettings) settings).getApiKey();
-//        if(apiKey == null) { 
-//            apiKey = "";
-//        }
-//        return new VirusTotalOnlineCheckModule(apiKey);
+////        String apiKey = ((VirusTotalOnlineCheckSettings) settings).getApiKey();
+////        if(apiKey == null) { 
+////            apiKey = "";
+////        }
+////        return new VirusTotalOnlineCheckModule(apiKey);
         throw new UnsupportedOperationException();
     }
 }

@@ -10,7 +10,7 @@ import org.sleuthkit.autopsy.ingest.IngestModuleGlobalSettingsPanel;
  *
  * @author Developer
  */
-public class OpentimestampsGlobalSettingsPanel extends javax.swing.JPanel implements java.beans.Customizer {
+public class OpentimestampsGlobalSettingsPanel extends IngestModuleGlobalSettingsPanel implements java.beans.Customizer {
     
     private Object bean;
 
@@ -35,6 +35,10 @@ public class OpentimestampsGlobalSettingsPanel extends javax.swing.JPanel implem
 
     }//GEN-END:initComponents
 
+    @Override
+    public void saveSettings() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
