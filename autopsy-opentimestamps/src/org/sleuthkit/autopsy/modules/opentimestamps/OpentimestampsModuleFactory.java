@@ -5,7 +5,7 @@
  */
 package org.sleuthkit.autopsy.modules.opentimestamps;
 
-import org.openide.util.NbBundle;
+//import org.openide.util.NbBundle;
 import org.openide.util.lookup.ServiceProvider;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModule;
 import org.sleuthkit.autopsy.ingest.FileIngestModule;
@@ -22,9 +22,11 @@ import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettingsPanel;
 public class OpentimestampsModuleFactory implements IngestModuleFactory{
     
     private static final String VERSION_NUMBER = "0.0.1";
-
+    
+    @Override
     public String getModuleDisplayName() {
-        return NbBundle.getMessage(OpentimestampsModuleFactory.class, "OpentimestampsModuleFactory.moduleName");
+        //return NbBundle.getMessage(OpentimestampsModuleFactory.class, "OpentimestampsModuleFactory.moduleName");
+        return "opentimestamps";
 
     }
 
