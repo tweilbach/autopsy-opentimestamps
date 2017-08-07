@@ -23,11 +23,15 @@ public class OpentimestampsModuleFactory implements IngestModuleFactory{
     
     private static final String VERSION_NUMBER = "0.0.1";
     
+    static String getModuleName() {
+        return NbBundle.getMessage(OpentimestampsModuleFactory.class, "OpentimestampsModuleFactory.moduleName");
+    }
+    
     @Override
     public String getModuleDisplayName() {
-        return NbBundle.getMessage(OpentimestampsModuleFactory.class, "OpentimestampsModuleFactory.moduleName");
+        //return NbBundle.getMessage(OpentimestampsModuleFactory.class, "OpentimestampsModuleFactory.moduleName");
         //return "opentimestamps";
-
+        return getModuleName();
     }
 
     @Override

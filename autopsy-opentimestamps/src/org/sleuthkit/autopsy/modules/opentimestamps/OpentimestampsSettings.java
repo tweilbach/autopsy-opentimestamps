@@ -32,4 +32,5 @@ public class OpentimestampsSettings implements IngestModuleIngestJobSettings {
         return serialVersionUID;
     }
     
+    
 }
