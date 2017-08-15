@@ -42,15 +42,25 @@ import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Image;
+import org.sleuthkit.datamodel.Tag;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import java.io.FileWriter;
+import java.util.Date;
 
-import com.eternitywall.ots.OtsRaw;
+import com.eternitywall.ots.OtsFunctions;
+import java.nio.file.Paths;
+import org.sleuthkit.autopsy.casemodule.services.Blackboard;
+import org.sleuthkit.datamodel.AbstractFile;
 /**
  *
  * @author Developer
  */
 public class OpentimestampsModule implements DataSourceIngestModule {
+    
+    private TagsManager tagsManager;
+    private String tagNameString = "Opentimestamps";
+    private TagName moduleTag;
     
     private static final IngestModuleReferenceCounter refCounter = new IngestModuleReferenceCounter();
     private static final String moduleName = OpentimestampsModuleFactory.getModuleName();
@@ -58,6 +68,9 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     private IngestJobContext context;
     private String outputDirPath;
     private String derivedFileInCaseDatabase;
+    private List<String> calendarURLs = new ArrayList<>();
+    private String algorithm = "SHA256";
+    private String signatureFile = "";
     
     @Override
     public void startUp(IngestJobContext context) throws IngestModuleException {
@@ -78,6 +91,13 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     
     @Override
     public ProcessResult process(Content dataSource, DataSourceIngestModuleProgress progressBar) {
+        
+        Logger logger = IngestServices.getInstance().getLogger(moduleName);
+        List<String> Messages = new ArrayList<>();
+        OpentimestampsReport otsReport = new OpentimestampsReport();
+        
+        //Blackboard currentBlackboard = Case.getCurrentCase().getServices().getBlackboard();
+        
         if (refCounter.get(context.getJobId()) == 1) {
             try{
                 //my code here
@@ -85,19 +105,11 @@ public class OpentimestampsModule implements DataSourceIngestModule {
                 // the results of the analysis.
                 progressBar.switchToDeterminate(1);
                 
-                if(dataSource instanceof Image){
-                    Image image = (Image) dataSource;
-                    String dataSourcePath = image.getPaths()[0];
-                    //Maybe do some debug logging here
-                    //OtsRaw.
-                }
-                else{
-                    return ProcessResult.OK;
-                }
+                stamp(dataSource, otsReport);
                 
                 return ProcessResult.OK;
             } catch (Exception ex) {
-                Logger logger = IngestServices.getInstance().getLogger(moduleName);
+                //Logger logger = IngestServices.getInstance().getLogger(moduleName);
                 logger.log(Level.SEVERE, "Failed to perform analysis", ex);  //NON-NLS
                 return ProcessResult.ERROR;
             }
@@ -105,15 +117,107 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         
         return ProcessResult.OK;
     }
+    
+    public void stamp(Content dataSource, OpentimestampsReport otsReport){
+        
+        Logger logger = IngestServices.getInstance().getLogger(moduleName);
+        
+        if(dataSource instanceof Image){
+            Image image = (Image) dataSource;
+            String dataSourcePath = image.getPaths()[0];
+            List<String> dsFilePath = new ArrayList<>();
+            dsFilePath.add(dataSourcePath);
+            //Maybe do some debug logging here
+            logger.log(Level.INFO, dataSourcePath);
+            //
+            otsReport.messages = OtsFunctions.multistamp(dsFilePath, calendarURLs, calendarURLs.size(), null, algorithm);
+ 
+            for (String message : otsReport.messages){
+                logger.log(Level.INFO, message);
+            }
 
-//    @Override
-//    public void shutDown() {
-//        int number = 1;
+            otsReport.success = true;
+
+        }
+        else if(dataSource instanceof File){
+
+            otsReport.success = false;
+            otsReport.messages.add("Data source format not supported");
+            //return ProcessResult.OK;
+        }
+        
+        createOtsReport(otsReport,dataSource.getName());
+       
+    }
+    
+//    public otsResult upgrade(Content datasource){
+//        otsResult res = new otsResult();
+//        
+//        res.success = true;
+//        
+//        return res;
+//    }
+//    
+//    public otsResult info(Content datasource){
+//        otsResult res = new otsResult();
+//        
+//        res.success = true;
+//        
+//        return res;
+//    }
+//    
+//    public otsResult verify(Content datasource){
+//        otsResult res = new otsResult();
+//        
+//        res.success = true;
+//        
+//        return res;
 //    }
 
-//    @Override
-//    public void startUp(IngestJobContext context) throws IngestModuleException {
-//       int number = 1;
-//    }
+    
+    private void createOtsTag(AbstractFile file, OpentimestampsReport otsInfo) throws TskCoreException {
+        tagsManager.addContentTag(file, moduleTag, "OTS Info: " + otsInfo.getInfoResult());
+    }
+    
+    private void addOtsReport(String reportName){
+        try{
+            Case.getCurrentCase().addReport(outputDirPath, moduleName, reportName);
+        }catch(TskCoreException ex){
+            
+        }
+    }
+    
+    private void createOtsReport(OpentimestampsReport otsReport, String reportName){
+        try{
+            
+            FileWriter writer = new FileWriter(Paths.get(outputDirPath, reportName + "_OTS_Proof_Report.txt").toString());
+            
+            for(String line: otsReport.messages) {
+              writer.write(line);
+            }
+            
+            writer.close();
+            
+            addOtsReport(reportName);
+            
+        } catch(IOException e){
+            
+        }
+
+    }
+    
+    private void appendOtsReport(){
+        
+    }
+    
+    private class otsResult{
+        
+        boolean success;
+        List<String> messages;
+        
+        public otsResult(){
+            success = false;
+        }
+    }
    
 }
