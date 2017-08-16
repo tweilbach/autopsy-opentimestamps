@@ -71,6 +71,7 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     private List<String> calendarURLs = new ArrayList<>();
     private String algorithm = "SHA256";
     private String signatureFile = "";
+    Logger logger = IngestServices.getInstance().getLogger(moduleName);
     
     @Override
     public void startUp(IngestJobContext context) throws IngestModuleException {
@@ -92,7 +93,6 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     @Override
     public ProcessResult process(Content dataSource, DataSourceIngestModuleProgress progressBar) {
         
-        Logger logger = IngestServices.getInstance().getLogger(moduleName);
         List<String> Messages = new ArrayList<>();
         OpentimestampsReport otsReport = new OpentimestampsReport();
         
@@ -105,7 +105,15 @@ public class OpentimestampsModule implements DataSourceIngestModule {
                 // the results of the analysis.
                 progressBar.switchToDeterminate(1);
                 
-                stamp(dataSource, otsReport);
+                if (checkOtsProofExists(dataSource.getUniquePath())){
+                    if (upgradeOtsProof(dataSource.getUniquePath())){
+                        verifyOtsProof(dataSource.getUniquePath());
+                    }
+                }
+                else {
+                    stamp(dataSource, otsReport);
+                    infoOtsProof(dataSource.getUniquePath());
+                }
                 
                 return ProcessResult.OK;
             } catch (Exception ex) {
@@ -120,7 +128,7 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     
     public void stamp(Content dataSource, OpentimestampsReport otsReport){
         
-        Logger logger = IngestServices.getInstance().getLogger(moduleName);
+        //Logger logger = IngestServices.getInstance().getLogger(moduleName);
         
         if(dataSource instanceof Image){
             Image image = (Image) dataSource;
@@ -131,10 +139,10 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             logger.log(Level.INFO, dataSourcePath);
             //
             otsReport.messages = OtsFunctions.multistamp(dsFilePath, calendarURLs, calendarURLs.size(), null, algorithm);
- 
-            for (String message : otsReport.messages){
-                logger.log(Level.INFO, message);
-            }
+
+//            for (String message : otsReport.messages){
+//                logger.log(Level.INFO, message);
+//            }
 
             otsReport.success = true;
 
@@ -150,64 +158,103 @@ public class OpentimestampsModule implements DataSourceIngestModule {
        
     }
     
-//    public otsResult upgrade(Content datasource){
-//        otsResult res = new otsResult();
-//        
-//        res.success = true;
-//        
-//        return res;
-//    }
-//    
-//    public otsResult info(Content datasource){
-//        otsResult res = new otsResult();
-//        
-//        res.success = true;
-//        
-//        return res;
-//    }
-//    
-//    public otsResult verify(Content datasource){
-//        otsResult res = new otsResult();
-//        
-//        res.success = true;
-//        
-//        return res;
-//    }
-
-    
-    private void createOtsTag(AbstractFile file, OpentimestampsReport otsInfo) throws TskCoreException {
-        tagsManager.addContentTag(file, moduleTag, "OTS Info: " + otsInfo.getInfoResult());
-    }
-    
     private void addOtsReport(String reportName){
         try{
             Case.getCurrentCase().addReport(outputDirPath, moduleName, reportName);
         }catch(TskCoreException ex){
-            
+            logger.log(Level.SEVERE, "Failed to add Opentimestamps report", ex);
         }
     }
     
     private void createOtsReport(OpentimestampsReport otsReport, String reportName){
         try{
             
-            FileWriter writer = new FileWriter(Paths.get(outputDirPath, reportName + "_OTS_Proof_Report.txt").toString());
+            String reportPath = Paths.get(outputDirPath, reportName + "_OTS_Proof_Report.txt").toString();
             
-            for(String line: otsReport.messages) {
-              writer.write(line);
+            try (FileWriter writer = appendMode(reportPath)) {
+                for(String line: otsReport.messages) {
+                    writer.write(line);
+                }
             }
-            
-            writer.close();
             
             addOtsReport(reportName);
             
-        } catch(IOException e){
-            
+        } catch(IOException ex){
+            logger.log(Level.SEVERE, "Failed to create Opentimestamps report", ex);
         }
 
     }
     
-    private void appendOtsReport(){
+    private FileWriter appendMode(String reportPath) throws IOException{
+        File f = new File(reportPath);
         
+        //If report already exists
+        if(f.exists() && !f.isDirectory()) { 
+            try{
+                return new FileWriter(reportPath,true);
+            }
+            catch(IOException ex){
+                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
+            }
+        }
+        else {
+            try{
+                return new FileWriter(reportPath);
+            }
+            catch(IOException ex){
+                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
+            }
+        }
+        
+        return new FileWriter(reportPath,true);
+    }
+    
+    private boolean checkOtsProofExists(String dataSourcePath){
+        try{
+            File f = new File(getOtsProofPath(dataSourcePath));
+            
+            if(f.exists() && !f.isDirectory()) { 
+            return true;
+        }
+        }catch(Exception ex){
+            logger.log(Level.WARNING, "Failed to verify if Opentimestamps proof exists", ex);
+        }
+        
+        return false;
+    }
+    
+    private boolean upgradeOtsProof(String path){
+        try{
+            String upgradeResult = com.eternitywall.ots.OtsFunctions.upgrade(getOtsProofPath(path), true);
+
+            if (upgradeResult.toLowerCase().contains("timestamp not upgraded")){
+                return true;
+            }
+            else if (upgradeResult.toLowerCase().contains("timestamp has been successfully upgraded")){
+                return false;
+            }
+        } catch (Exception ex){
+            logger.log(Level.WARNING, "Failed to upgrade proof. Assuming it is not yet upgraded.", ex);
+        }
+
+        return false;
+    }
+    
+    private void verifyOtsProof(String path){
+        try{
+            //Second parameter to verify is null since we won't ever be seding the hash - we should have a reference to the original file
+            String verifyResult = com.eternitywall.ots.OtsFunctions.verify(getOtsProofPath(path), null);
+        }catch (Exception ex){
+            logger.log(Level.WARNING, "Failed to valdate proof.", ex);
+        }
+    }
+    
+    private String infoOtsProof(String path){
+        return "";
+    }
+    
+    private String getOtsProofPath(String dataSourcePath){
+        return Paths.get(dataSourcePath, ".ots").toString();
     }
     
     private class otsResult{
