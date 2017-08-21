@@ -67,7 +67,7 @@ public class OpentimestampsFunctions {
         }
     }
     
-    public static List<String> multistamp(List<String> argsFiles, List<String> calendarsUrl, Integer m, String signatureFile, String algorithm){
+    public static String multistamp(List<String> argsFiles, List<String> calendarsUrl, Integer m, String signatureFile, String algorithm){
         //Create return message object
         List<String> messages = new ArrayList<>();
         // Parse input privateUrls
@@ -77,7 +77,7 @@ public class OpentimestampsFunctions {
                 privateUrls = readSignature(signatureFile);
             } catch (Exception e) {
                 //log.severe("No valid signature file");
-                messages.add("No valid signature file");
+                return "No valid signature file";
             }
         }
 
@@ -89,15 +89,14 @@ public class OpentimestampsFunctions {
                 Hash hash = Hash.from( file, Hash.getOp(algorithm)._TAG());
                 mapFiles.put( argsFile, DetachedTimestampFile.from(hash) );
             } catch (IOException e) {
-                messages.add(e.getMessage());
+                //messages.add(e.getMessage());
                 //log.severe("File read error");
-                messages.add("File read error");
-                return messages;
+                return "File read error: " + e.getMessage();
+                
             } catch (NoSuchAlgorithmException e) {
                 messages.add(e.getMessage());
                 //log.severe("Crypto error");
-                messages.add("Crypto error");
-                return messages;
+                return "Crypto error: " + e.getMessage();
             }
         }
 
@@ -110,10 +109,8 @@ public class OpentimestampsFunctions {
                throw new IOException();
             }
         } catch (IOException e) {
-            messages.add(e.getMessage());
-            messages.add("Stamp error");
             //log.severe("Stamp error");
-            return messages;
+            return "Stamp error: " + e.getMessage();
         }
 
         // Generate ots output files
@@ -126,19 +123,20 @@ public class OpentimestampsFunctions {
                 Path path = Paths.get(argsOts);
                 if (Files.exists(path)) {
                     //System.out.println("File '" + argsOts + "' already exist");
-                    messages.add("File '" + argsOts + "' already exist");
+                    return "File '" + argsOts + "' already exist";
                 } else {
                     Files.write(path, detached.serialize());
                     //System.out.println("The timestamp proof '" + argsOts + "' has been created!");
-                    messages.add("The timestamp proof '" + argsOts + "' has been created!");
+                    return "The timestamp proof '" + argsOts + "' has been created!";
                 }
             }catch (Exception e){
-                messages.add(e.getMessage());
-                messages.add("File '" + argsOts + "' writing error");
+                //messages.add(e.getMessage());
+                return "File '" + argsOts + "' writing error: " + e.getMessage();
                 //log.severe("File '" + argsOts + "' writing error");
             }
         }
-        return messages;
+        
+        return "Stamp not executed";
     }
     
     private static String stamp(Hash hash, List<String> calendarsUrl, Integer m, String signatureFile) {

@@ -34,8 +34,8 @@
             </module-dependencies>
             <public-packages/>
             <class-path-extension>
-                <runtime-relative-path>ext/OtsFunctions.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/OtsFunctions.jar</binary-origin>
+                <runtime-relative-path>ext/OtsCli.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/OtsCli.jar</binary-origin>
             </class-path-extension>
         </data>
     </configuration>

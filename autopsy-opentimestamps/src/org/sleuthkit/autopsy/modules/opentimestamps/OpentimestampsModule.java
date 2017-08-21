@@ -23,7 +23,6 @@ import org.sleuthkit.datamodel.Image;
 import java.io.FileWriter;
 import java.util.Date;
 
-import com.eternitywall.ots.OtsFunctions;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.time.LocalDateTime;
@@ -50,6 +49,7 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     private String signatureFile = "";
     Logger logger = IngestServices.getInstance().getLogger(moduleName);
     
+    //Execution flow and setup
     @Override
     public void startUp(IngestJobContext context) throws IngestModuleException {
         this.context = context;
@@ -114,16 +114,18 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         }
         else {
             logger.log(Level.INFO, "OTS process - No proof exists so we'll create the firts proof ");
-            stamp(dataSourcePath, dataSource.getName());
+            createOtsProof(dataSourcePath, dataSource.getName());
             logger.log(Level.INFO, "OTS process - Getting onfo on the proof we just created. ");
             infoOtsProof(dataSourcePath, dataSource.getName());
         }
     }
     
-    public void stamp(String dataSourcePath, String dataSourceName){
+    
+    //OTS functions
+    public void createOtsProof(String dataSourcePath, String dataSourceName){
         
+        List<String> otsMessages = new ArrayList<>();
         //Logger logger = IngestServices.getInstance().getLogger(moduleName);
-        List<String> otsMessages;
         
         //Maybe do some debug logging here
         logger.log(Level.INFO, dataSourcePath);
@@ -131,85 +133,28 @@ public class OpentimestampsModule implements DataSourceIngestModule {
          List<String> dsFilePaths = new ArrayList<>();
          dsFilePaths.add(dataSourcePath);
         //
-        otsMessages = OtsFunctions.multistamp(dsFilePaths, calendarURLs, calendarURLs.size(), null, algorithm);
+        String stampResult = OpentimestampsFunctions.multistamp(dsFilePaths, calendarURLs, calendarURLs.size(), null, algorithm);
 
 //            for (String message : otsReport.messages){
 //                logger.log(Level.INFO, message);
 //            }
-        
+        otsMessages.add(stampResult);
+
         createOtsReport(otsMessages,dataSourceName);
        
     }
     
-    private void addOtsReport(String reportName){
-        try{
-            Case.getCurrentCase().addReport(outputDirPath, moduleName, reportName);
-        }catch(TskCoreException ex){
-            logger.log(Level.SEVERE, "Failed to add Opentimestamps report", ex);
-        }
-    }
-    
-    private void createOtsReport(List<String> otsMessages, String reportName){
-        try{
-            
-            String reportPath = Paths.get(outputDirPath, reportName + "_OTS_Proof_Report.txt").toString();
-            
-            try (FileWriter writer = appendMode(reportPath)) {
-                for(String line: otsMessages) {
-                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-                    LocalDateTime now = LocalDateTime.now();
-                    
-                    String formattedDate = dtf.format(now);
-                    writer.write(formattedDate + ": " + line);
-                    writer.append(System.lineSeparator());
-                }
-            }
-            
-            addOtsReport(reportName);
-            
-        } catch(IOException ex){
-            logger.log(Level.SEVERE, "Failed to create Opentimestamps report", ex);
-        }
-
-    }
-    
-    private FileWriter appendMode(String reportPath) throws IOException{
-        File f = new File(reportPath);
+    private String infoOtsProof(String path, String reportName){
         
-        //If report already exists
-        if(f.exists() && !f.isDirectory()) { 
-            try{
-                return new FileWriter(reportPath,true);
-            }
-            catch(IOException ex){
-                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
-            }
-        }
-        else {
-            try{
-                return new FileWriter(reportPath);
-            }
-            catch(IOException ex){
-                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
-            }
-        }
+        List<String> otsMessages = new ArrayList<>();
         
-        return new FileWriter(reportPath,true);
-    }
-    
-    private boolean checkOtsProofExists(String dataSourcePath){
-        try{
-            File f = new File(getOtsProofPath(dataSourcePath));
-            logger.log(Level.INFO, "Checking if {0} exists.", f.getPath());
-            if(f.exists() && f.isFile()) { 
-                logger.log(Level.INFO, "{0} does exist.", f.getPath());
-                return true;
-            }
-        }catch(Exception ex){
-            logger.log(Level.WARNING, "Failed to verify if Opentimestamps proof exists", ex);
-        }
+        String infoResult = OpentimestampsFunctions.info(getOtsProofPath(path));
         
-        return false;
+        otsMessages.add(infoResult);
+            
+        createOtsReport(otsMessages, reportName);
+        
+        return infoResult;
     }
     
     private void upgradeOtsProof(String path, String reportName){
@@ -217,7 +162,7 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             
             List<String> otsMessages = new ArrayList<>();
             
-            String upgradeResult = com.eternitywall.ots.OtsFunctions.upgrade(getOtsProofPath(path), true);
+            String upgradeResult = OpentimestampsFunctions.upgrade(getOtsProofPath(path), true);
             
             otsMessages.add(upgradeResult);
             
@@ -244,12 +189,16 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             List<String> otsMessages = new ArrayList<>();
             logger.log(Level.INFO, getOtsProofPath(path));
             //Second parameter to verify is null since we won't ever be seding the hash - we should have a reference to the original file
-            String verifyResult = com.eternitywall.ots.OtsFunctions.verify(getOtsProofPath(path));
+            String verifyResult = OpentimestampsFunctions.verify(getOtsProofPath(path));
             
             
             logger.log(Level.INFO, verifyResult);
             
             otsMessages.add(verifyResult);
+            
+            String stampInfo = OpentimestampsFunctions.info(getOtsProofPath(path));
+                    
+            otsMessages.add("Timestamp details: " + stampInfo);
             
             createOtsReport(otsMessages, reportName);
             
@@ -258,17 +207,64 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         }
     }
     
-    private String infoOtsProof(String path, String reportName){
-        
-        List<String> otsMessages = new ArrayList<>();
-        
-        String infoResult = com.eternitywall.ots.OtsFunctions.info(getOtsProofPath(path));
-        
-        otsMessages.add(infoResult);
+    
+    //Reporting functions
+    private void addOtsReport(String reportName){
+        try{
+            Case.getCurrentCase().addReport(outputDirPath, moduleName, reportName);
+        }catch(TskCoreException ex){
+            logger.log(Level.SEVERE, "Failed to add Opentimestamps report", ex);
+        }
+    }
+    
+    private void createOtsReport(List<String> otsMessages, String reportName){
+        try{
             
-        createOtsReport(otsMessages, reportName);
+            String reportPath = Paths.get(outputDirPath, reportName + "_OTS_Report.txt").toString();
+            
+            logger.log(Level.INFO, "About to writer report, path is: " + reportPath);
+            
+            ReportWriter reportWriter = appendMode(reportPath);
+
+            for(String line: otsMessages) {
+
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+                LocalDateTime now = LocalDateTime.now();
+                
+                String formattedDate = dtf.format(now);
+                reportWriter.fw.write(formattedDate + ": " + line);
+                
+                logger.log(Level.INFO, "Added line to report: " + formattedDate + ": " + line);
+                
+                reportWriter.fw.append(System.lineSeparator());
+            }
+            
+            if(!reportWriter.exists){
+                addOtsReport(reportName);
+                logger.log(Level.INFO, "Added report to Case: " + reportName);
+            }
+            
+        } catch(Exception ex){
+            logger.log(Level.SEVERE, "Failed to create Opentimestamps report", ex);
+        }
+
+    }
+    
+    
+    //Helper functions
+    private boolean checkOtsProofExists(String dataSourcePath){
+        try{
+            File f = new File(getOtsProofPath(dataSourcePath));
+            logger.log(Level.INFO, "Checking if {0} exists.", f.getPath());
+            if(f.exists() && f.isFile()) { 
+                logger.log(Level.INFO, "{0} does exist.", f.getPath());
+                return true;
+            }
+        }catch(Exception ex){
+            logger.log(Level.WARNING, "Failed to verify if Opentimestamps proof exists", ex);
+        }
         
-        return infoResult;
+        return false;
     }
     
     private String getOtsProofPath(String dataSourcePath){
@@ -303,5 +299,40 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         
         return dsFilePaths;
     }
-   
+    
+    private ReportWriter appendMode(String reportPath) throws IOException{
+        File f = new File(reportPath);
+        
+        ReportWriter reportWriter = new ReportWriter();
+        
+        //If report already exists
+        if(f.exists() && !f.isDirectory()) { 
+            try{
+                reportWriter.fw = new FileWriter(reportPath,true);
+                reportWriter.exists = true;
+                
+            }
+            catch(Exception ex){
+                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
+            }
+        }
+        else {
+            try{
+                reportWriter.fw = new FileWriter(reportPath);
+                reportWriter.exists = false;
+                
+            }
+            catch(Exception ex){
+                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
+            }
+        }
+        
+        return reportWriter;
+    }
+    
+    //classes
+    private class ReportWriter{
+        FileWriter fw = null;
+        Boolean exists = false;
+    }
 }
