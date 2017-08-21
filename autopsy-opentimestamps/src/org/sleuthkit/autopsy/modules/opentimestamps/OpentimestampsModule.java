@@ -5,69 +5,46 @@
  */
 package org.sleuthkit.autopsy.modules.opentimestamps;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import org.openide.util.Exceptions;
-import org.sleuthkit.autopsy.casemodule.Case;
-import org.sleuthkit.autopsy.casemodule.services.TagsManager;
-import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
-import org.sleuthkit.autopsy.ingest.DataSourceIngestModule;
-import org.sleuthkit.autopsy.ingest.IngestJobContext;
-import org.sleuthkit.datamodel.Content;
-import org.sleuthkit.datamodel.HashUtility;
-import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TskCoreException;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import org.sleuthkit.autopsy.casemodule.Case;
-import org.sleuthkit.autopsy.coreutils.ErrorInfo;
-import org.sleuthkit.autopsy.coreutils.ExecUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.externalresults.ExternalResults;
-import org.sleuthkit.autopsy.externalresults.ExternalResultsImporter;
-import org.sleuthkit.autopsy.externalresults.ExternalResultsXMLParser;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModule;
-import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProcessTerminator;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
-import org.sleuthkit.autopsy.ingest.IngestMessage;
 import org.sleuthkit.autopsy.ingest.IngestModuleReferenceCounter;
 import org.sleuthkit.autopsy.ingest.IngestServices;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
-import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Image;
-import org.sleuthkit.datamodel.Tag;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import java.io.FileWriter;
 import java.util.Date;
 
 import com.eternitywall.ots.OtsFunctions;
 import java.nio.file.Paths;
-import org.sleuthkit.autopsy.casemodule.services.Blackboard;
-import org.sleuthkit.datamodel.AbstractFile;
+import java.text.DateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.sleuthkit.autopsy.modules.opentimestamps.OpentimestampsFunctions;
 /**
  *
  * @author Developer
  */
 public class OpentimestampsModule implements DataSourceIngestModule {
     
-    private TagsManager tagsManager;
+    //private TagsManager tagsManager;
     private String tagNameString = "Opentimestamps";
-    private TagName moduleTag;
+   // private TagName moduleTag;
     
     private static final IngestModuleReferenceCounter refCounter = new IngestModuleReferenceCounter();
     private static final String moduleName = OpentimestampsModuleFactory.getModuleName();
-    private final String fileInCaseDatabase = "/WINDOWS/system32/ntmsapi.dll"; // Probably  
+    //private final String fileInCaseDatabase = "/WINDOWS/system32/ntmsapi.dll"; // Probably  
     private IngestJobContext context;
     private String outputDirPath;
-    private String derivedFileInCaseDatabase;
+    //private String derivedFileInCaseDatabase;
     private List<String> calendarURLs = new ArrayList<>();
     private String algorithm = "SHA256";
     private String signatureFile = "";
@@ -86,33 +63,34 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         }
     }
     
-//    public OpentimestampsModule() {
-//        int number;
-//    }
-    
     @Override
     public ProcessResult process(Content dataSource, DataSourceIngestModuleProgress progressBar) {
         
-        List<String> Messages = new ArrayList<>();
-        OpentimestampsReport otsReport = new OpentimestampsReport();
-        
-        //Blackboard currentBlackboard = Case.getCurrentCase().getServices().getBlackboard();
-        
-        if (refCounter.get(context.getJobId()) == 1) {
+        //if (refCounter.get(context.getJobId()) == 1) {
             try{
                 //my code here
                 // There will be two tasks: data source analysis and import of 
                 // the results of the analysis.
                 progressBar.switchToDeterminate(1);
+                //Get all the paths for data source
+                List<String> dataSourcePaths = getDataSourcePaths(dataSource);
                 
-                if (checkOtsProofExists(dataSource.getUniquePath())){
-                    if (upgradeOtsProof(dataSource.getUniquePath())){
-                        verifyOtsProof(dataSource.getUniquePath());
-                    }
+                //logging
+                for (String path : dataSourcePaths){
+                    logger.log(Level.INFO, "This is the path: "+ path);
                 }
-                else {
-                    stamp(dataSource, otsReport);
-                    infoOtsProof(dataSource.getUniquePath());
+                //Check if there is more than 1 to process.
+                if(dataSourcePaths.size() == 1){
+                    logger.log(Level.INFO, "About to get path");
+                    String dataSourcePath = dataSourcePaths.get(0);
+                    logger.log(Level.INFO, "About to get Process");
+                    otsProcess(dataSourcePath, dataSource);
+                    
+                } else if (dataSourcePaths.size() > 1){
+                    logger.log(Level.INFO, "We have more tahn one path");
+                    for (String path : dataSourcePaths){
+                        otsProcess(path, dataSource);
+                    }
                 }
                 
                 return ProcessResult.OK;
@@ -121,40 +99,45 @@ public class OpentimestampsModule implements DataSourceIngestModule {
                 logger.log(Level.SEVERE, "Failed to perform analysis", ex);  //NON-NLS
                 return ProcessResult.ERROR;
             }
-        }
+        //}
         
-        return ProcessResult.OK;
+        //return ProcessResult.OK;
+    }
+
+    private void otsProcess(String dataSourcePath, Content dataSource) {
+        if (checkOtsProofExists(dataSourcePath)){
+            logger.log(Level.INFO, "OTS process - Proof exists so we will attmept to upgarde it");
+            upgradeOtsProof(dataSourcePath, dataSource.getName());
+            logger.log(Level.INFO, "OTS process - It was upgraded so we'll just move along and verify it");
+            verifyOtsProof(dataSourcePath, dataSource.getName());
+            logger.log(Level.INFO, "OTS process - Upgrade returned false so we did not verify ");
+        }
+        else {
+            logger.log(Level.INFO, "OTS process - No proof exists so we'll create the firts proof ");
+            stamp(dataSourcePath, dataSource.getName());
+            logger.log(Level.INFO, "OTS process - Getting onfo on the proof we just created. ");
+            infoOtsProof(dataSourcePath, dataSource.getName());
+        }
     }
     
-    public void stamp(Content dataSource, OpentimestampsReport otsReport){
+    public void stamp(String dataSourcePath, String dataSourceName){
         
         //Logger logger = IngestServices.getInstance().getLogger(moduleName);
+        List<String> otsMessages;
         
-        if(dataSource instanceof Image){
-            Image image = (Image) dataSource;
-            String dataSourcePath = image.getPaths()[0];
-            List<String> dsFilePath = new ArrayList<>();
-            dsFilePath.add(dataSourcePath);
-            //Maybe do some debug logging here
-            logger.log(Level.INFO, dataSourcePath);
-            //
-            otsReport.messages = OtsFunctions.multistamp(dsFilePath, calendarURLs, calendarURLs.size(), null, algorithm);
+        //Maybe do some debug logging here
+        logger.log(Level.INFO, dataSourcePath);
+        //Adding the string back into a list since mutistamp takes a list as input - dirty I know
+         List<String> dsFilePaths = new ArrayList<>();
+         dsFilePaths.add(dataSourcePath);
+        //
+        otsMessages = OtsFunctions.multistamp(dsFilePaths, calendarURLs, calendarURLs.size(), null, algorithm);
 
 //            for (String message : otsReport.messages){
 //                logger.log(Level.INFO, message);
 //            }
-
-            otsReport.success = true;
-
-        }
-        else if(dataSource instanceof File){
-
-            otsReport.success = false;
-            otsReport.messages.add("Data source format not supported");
-            //return ProcessResult.OK;
-        }
         
-        createOtsReport(otsReport,dataSource.getName());
+        createOtsReport(otsMessages,dataSourceName);
        
     }
     
@@ -166,14 +149,19 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         }
     }
     
-    private void createOtsReport(OpentimestampsReport otsReport, String reportName){
+    private void createOtsReport(List<String> otsMessages, String reportName){
         try{
             
             String reportPath = Paths.get(outputDirPath, reportName + "_OTS_Proof_Report.txt").toString();
             
             try (FileWriter writer = appendMode(reportPath)) {
-                for(String line: otsReport.messages) {
-                    writer.write(line);
+                for(String line: otsMessages) {
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+                    LocalDateTime now = LocalDateTime.now();
+                    
+                    String formattedDate = dtf.format(now);
+                    writer.write(formattedDate + ": " + line);
+                    writer.append(System.lineSeparator());
                 }
             }
             
@@ -212,10 +200,11 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     private boolean checkOtsProofExists(String dataSourcePath){
         try{
             File f = new File(getOtsProofPath(dataSourcePath));
-            
-            if(f.exists() && !f.isDirectory()) { 
-            return true;
-        }
+            logger.log(Level.INFO, "Checking if {0} exists.", f.getPath());
+            if(f.exists() && f.isFile()) { 
+                logger.log(Level.INFO, "{0} does exist.", f.getPath());
+                return true;
+            }
         }catch(Exception ex){
             logger.log(Level.WARNING, "Failed to verify if Opentimestamps proof exists", ex);
         }
@@ -223,48 +212,96 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         return false;
     }
     
-    private boolean upgradeOtsProof(String path){
+    private void upgradeOtsProof(String path, String reportName){
         try{
+            
+            List<String> otsMessages = new ArrayList<>();
+            
             String upgradeResult = com.eternitywall.ots.OtsFunctions.upgrade(getOtsProofPath(path), true);
-
-            if (upgradeResult.toLowerCase().contains("timestamp not upgraded")){
-                return true;
-            }
-            else if (upgradeResult.toLowerCase().contains("timestamp has been successfully upgraded")){
-                return false;
-            }
+            
+            otsMessages.add(upgradeResult);
+            
+            logger.log(Level.INFO, upgradeResult);
+            
+            createOtsReport(otsMessages, reportName);
+            
+//            if (upgradeResult.toLowerCase().contains("timestamp not upgraded") && upgradeResult.toLowerCase().contains("timestamp is not complete")){
+//                return false;
+//            }
+//            else if (upgradeResult.toLowerCase().contains("timestamp is not complete") && !upgradeResult.toLowerCase().contains("timestamp is not complete")){
+//                return true;
+//            }
+//            else if (upgradeResult.toLowerCase().contains("timestamp has been successfully upgraded")){
+//                return true;
+//            }
         } catch (Exception ex){
             logger.log(Level.WARNING, "Failed to upgrade proof. Assuming it is not yet upgraded.", ex);
         }
-
-        return false;
     }
     
-    private void verifyOtsProof(String path){
+    private void verifyOtsProof(String path, String reportName){
         try{
+            List<String> otsMessages = new ArrayList<>();
+            logger.log(Level.INFO, getOtsProofPath(path));
             //Second parameter to verify is null since we won't ever be seding the hash - we should have a reference to the original file
-            String verifyResult = com.eternitywall.ots.OtsFunctions.verify(getOtsProofPath(path), null);
+            String verifyResult = com.eternitywall.ots.OtsFunctions.verify(getOtsProofPath(path));
+            
+            
+            logger.log(Level.INFO, verifyResult);
+            
+            otsMessages.add(verifyResult);
+            
+            createOtsReport(otsMessages, reportName);
+            
         }catch (Exception ex){
             logger.log(Level.WARNING, "Failed to valdate proof.", ex);
         }
     }
     
-    private String infoOtsProof(String path){
-        return "";
+    private String infoOtsProof(String path, String reportName){
+        
+        List<String> otsMessages = new ArrayList<>();
+        
+        String infoResult = com.eternitywall.ots.OtsFunctions.info(getOtsProofPath(path));
+        
+        otsMessages.add(infoResult);
+            
+        createOtsReport(otsMessages, reportName);
+        
+        return infoResult;
     }
     
     private String getOtsProofPath(String dataSourcePath){
-        return Paths.get(dataSourcePath, ".ots").toString();
+        return dataSourcePath + ".ots";
     }
     
-    private class otsResult{
+    private List<String> getDataSourcePaths(Content dataSource) throws TskCoreException{
+        List<String> dsFilePaths = new ArrayList<>();
         
-        boolean success;
-        List<String> messages;
-        
-        public otsResult(){
-            success = false;
+        if(dataSource instanceof Image){
+            Image image = (Image) dataSource;
+            String dataSourcePath = image.getPaths()[0];
+            dsFilePaths.add(dataSourcePath);
+            //Some logging
+            logger.log(Level.INFO, dataSource.getName());
+            logger.log(Level.INFO, dataSource.getUniquePath());
+            logger.log(Level.INFO, dataSource.toString());
+        } else if(dataSource instanceof File){
+            File file = (File) dataSource;
+            String dataSourcePath = file.getPath();
+            dsFilePaths.add(dataSourcePath);
+            //Some logging
+            logger.log(Level.INFO, dataSource.getName());
+            logger.log(Level.INFO, dataSource.getUniquePath());
+            logger.log(Level.INFO, dataSource.toString());
+        } else {
+            //Some logging
+            logger.log(Level.INFO, dataSource.getName());
+            logger.log(Level.INFO, dataSource.getUniquePath());
+            logger.log(Level.INFO, dataSource.toString());
         }
+        
+        return dsFilePaths;
     }
    
 }
