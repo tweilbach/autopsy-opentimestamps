@@ -58,10 +58,8 @@ public class OpentimestampsFunctions {
             byte[] byteOts = Files.readAllBytes(pathOts);
             DetachedTimestampFile detached = DetachedTimestampFile.deserialize(byteOts);
             String infoResult = OpenTimestamps.info(detached);
-//            System.out.println(infoResult);
             return infoResult;
         } catch (IOException e) {
-//            log.severe("No valid file");
             return "No valid file";
         }
     }
@@ -75,7 +73,6 @@ public class OpentimestampsFunctions {
             try {
                 privateUrls = readSignature(signatureFile);
             } catch (Exception e) {
-                //log.severe("No valid signature file");
                 return "No valid signature file";
             }
         }
@@ -88,13 +85,10 @@ public class OpentimestampsFunctions {
                 Hash hash = Hash.from( file, Hash.getOp(algorithm)._TAG());
                 mapFiles.put( argsFile, DetachedTimestampFile.from(hash) );
             } catch (IOException e) {
-                //messages.add(e.getMessage());
-                //log.severe("File read error");
                 return "File read error: " + e.getMessage();
                 
             } catch (NoSuchAlgorithmException e) {
                 messages.add(e.getMessage());
-                //log.severe("Crypto error");
                 return "Crypto error: " + e.getMessage();
             }
         }
@@ -108,7 +102,6 @@ public class OpentimestampsFunctions {
                throw new IOException();
             }
         } catch (IOException e) {
-            //log.severe("Stamp error");
             return "Stamp error: " + e.getMessage();
         }
 
@@ -121,17 +114,13 @@ public class OpentimestampsFunctions {
             try {
                 Path path = Paths.get(argsOts);
                 if (Files.exists(path)) {
-                    //System.out.println("File '" + argsOts + "' already exist");
                     return "File '" + argsOts + "' already exist";
                 } else {
                     Files.write(path, detached.serialize());
-                    //System.out.println("The timestamp proof '" + argsOts + "' has been created!");
                     return "The timestamp proof '" + argsOts + "' has been created!";
                 }
             }catch (Exception e){
-                //messages.add(e.getMessage());
                 return "File '" + argsOts + "' writing error: " + e.getMessage();
-                //log.severe("File '" + argsOts + "' writing error");
             }
         }
         
@@ -145,7 +134,6 @@ public class OpentimestampsFunctions {
             try {
                 privateUrls = readSignature(signatureFile);
             } catch (Exception e) {
-                //log.severe("No valid signature file");
                 return "No valid signature file";
             }
         }
@@ -153,7 +141,6 @@ public class OpentimestampsFunctions {
         String argsOts = Utils.bytesToHex(shasum) + ".ots";
         Path path = Paths.get(argsOts);
         if(path.toFile().exists()) {
-            //System.out.println("File '" + argsOts + "' already exist");
             return "File '" + argsOts + "' already exist";
         }
 
@@ -161,16 +148,13 @@ public class OpentimestampsFunctions {
             DetachedTimestampFile detached = DetachedTimestampFile.from(hash);
             Timestamp stampResult = OpenTimestamps.stamp(detached, calendarsUrl, m, privateUrls);
             Files.write(path, stampResult.serialize());
-            //System.out.println("The timestamp proof '" + argsOts + "' has been created!");
             return "The timestamp proof '" + argsOts + "' has been created!";
         } catch (Exception e) {
-            //log.severe("Invalid shasum");
             return "Invalid shasum";
         }
     }
     
     public static String verify (String argsOts) {
-        //FileInputStream fis = null;
         try {
 
             Path pathOts = Paths.get(argsOts);
@@ -179,38 +163,19 @@ public class OpentimestampsFunctions {
             Long timestamp = null;
             byte[] shasum = null;
 
-//            if (shasum == null){
-                // Read from file
             String argsFile = argsOts.replace(".ots","");
             File file = new File(argsFile);
-            //System.out.println("Assuming target filename is '" + argsFile + "'");
             DetachedTimestampFile detached = DetachedTimestampFile.from(new OpSHA256(), file);
             timestamp = OpenTimestamps.verify(detachedOts,detached);
-//            } else {
-//                // Read from hash option
-//                //System.out.println("Assuming target hash is '" + Utils.bytesToHex(hash.getValue()) + "'");
-//                DetachedTimestampFile detached = DetachedTimestampFile.from(hash);
-//                timestamp = OpenTimestamps.verify(detachedOts,detached);
-//            }
 
             if(timestamp == null){
-                //System.out.println("Pending or Bad attestation");
                 return "Pending or Bad attestation";
             }else {
-                //System.out.println("Success! Bitcoin attests data existed as of "+ new Date(timestamp*1000) );
                 return "Success! Bitcoin attests data existed as of " + new Date(timestamp*1000);
             }
 
         } catch (Exception e) {
-            //log.severe("No valid file");
             return "No valid file" + e;
-//        } finally {
-//            try {
-//                fis.close();
-//            }catch  (IOException e) {
-//                //log.severe("No valid file");
-//                return "No valid file";
-//            }
         }
     }
 
@@ -242,7 +207,6 @@ public class OpentimestampsFunctions {
         } catch (IOException e) {
             return "No valid file";
         } catch (Exception e) {
-            //e.printStackTrace();
             return "Shrink error";
         }
     }
