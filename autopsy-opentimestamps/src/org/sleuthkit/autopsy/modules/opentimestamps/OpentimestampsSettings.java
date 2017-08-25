@@ -5,19 +5,8 @@
  */
 package org.sleuthkit.autopsy.modules.opentimestamps;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import org.openide.util.Exceptions;
-import org.sleuthkit.autopsy.casemodule.Case;
-import org.sleuthkit.autopsy.casemodule.services.TagsManager;
-import org.sleuthkit.autopsy.ingest.FileIngestModule;
-import org.sleuthkit.autopsy.ingest.IngestJobContext;
-import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.HashUtility;
-import org.sleuthkit.datamodel.TagName;
-import org.sleuthkit.datamodel.TskCoreException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettings;
 /**
  *
@@ -25,6 +14,9 @@ import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettings;
  */
 public class OpentimestampsSettings implements IngestModuleIngestJobSettings {
     
+    private ArrayList<String> calendarUrls;
+    private String calendarString = "";
+    private String btcConfPath = "";
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -32,5 +24,25 @@ public class OpentimestampsSettings implements IngestModuleIngestJobSettings {
         return serialVersionUID;
     }
     
+    public void setBtcConfPath(String path){
+        this.btcConfPath = path;
+    }
     
+    public String getBtcConfPath(){
+        return btcConfPath;
+    }
+    
+    public void setCalendarString(String urls){
+        calendarString = urls;
+    }
+    
+    public String getCalendarString(){
+        return calendarString;
+    }
+    
+    public ArrayList<String> getcalendarUrls(){
+        calendarUrls = new ArrayList<>(Arrays.asList(calendarString.split("\\s*,\\s*")));
+        
+        return calendarUrls;
+    }
 }

@@ -65,8 +65,7 @@ public class OpentimestampsModuleFactory implements IngestModuleFactory{
 
     @Override
     public IngestModuleIngestJobSettingsPanel getIngestJobSettingsPanel(IngestModuleIngestJobSettings settings) {
-        return new OpentimestampsJobSettingsPanel();
-        //return new OpentimestampsJobSettingsPanel((OpentimestampsSettings) settings);
+        return new OpentimestampsJobSettingsPanel((OpentimestampsSettings) settings);
     }
 
     @Override

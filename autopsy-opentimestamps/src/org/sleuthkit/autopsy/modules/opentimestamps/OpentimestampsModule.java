@@ -7,7 +7,6 @@ package org.sleuthkit.autopsy.modules.opentimestamps;
 
 import org.sleuthkit.datamodel.TskCoreException;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -21,13 +20,10 @@ import org.sleuthkit.autopsy.ingest.IngestServices;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Image;
 import java.io.FileWriter;
-import java.util.Date;
 
 import java.nio.file.Paths;
-import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import org.sleuthkit.autopsy.modules.opentimestamps.OpentimestampsFunctions;
 /**
  *
  * @author Developer
@@ -35,7 +31,7 @@ import org.sleuthkit.autopsy.modules.opentimestamps.OpentimestampsFunctions;
 public class OpentimestampsModule implements DataSourceIngestModule {
     
     //private TagsManager tagsManager;
-    private String tagNameString = "Opentimestamps";
+    //private String tagNameString = "Opentimestamps";
    // private TagName moduleTag;
     
     private static final IngestModuleReferenceCounter refCounter = new IngestModuleReferenceCounter();
@@ -224,22 +220,29 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             
             logger.log(Level.INFO, "About to writer report, path is: " + reportPath);
             
-            ReportWriter reportWriter = appendMode(reportPath);
+            boolean appendMode = appendReport(reportPath);
+            
+            //ReportWriter reportWriter = appendMode(reportPath);
+            try(FileWriter fileWriter = new FileWriter(reportPath, appendMode)){
+            
+                logger.log(Level.INFO, "This is the darn file writer: " + fileWriter);
+                //logger.log(Level.INFO, "ANd this is its state: " + reportWriter.exists.toString());
 
-            for(String line: otsMessages) {
+                for(String line: otsMessages) {
 
-                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-                LocalDateTime now = LocalDateTime.now();
-                
-                String formattedDate = dtf.format(now);
-                reportWriter.fw.write(formattedDate + ": " + line);
-                
-                logger.log(Level.INFO, "Added line to report: " + formattedDate + ": " + line);
-                
-                reportWriter.fw.append(System.lineSeparator());
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+                    LocalDateTime now = LocalDateTime.now();
+
+                    String formattedDate = dtf.format(now);
+                    fileWriter.write(formattedDate + ": " + line);
+
+                    logger.log(Level.INFO, "Added line to report: {0}: {1}", new Object[]{formattedDate, line});
+
+                    fileWriter.write(System.lineSeparator());
+                }
             }
             
-            if(!reportWriter.exists){
+            if(!appendMode){
                 addOtsReport(reportName);
                 logger.log(Level.INFO, "Added report to Case: " + reportName);
             }
@@ -300,39 +303,17 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         return dsFilePaths;
     }
     
-    private ReportWriter appendMode(String reportPath) throws IOException{
-        File f = new File(reportPath);
-        
-        ReportWriter reportWriter = new ReportWriter();
-        
-        //If report already exists
+    private boolean appendReport(String reportPath){
+         File f = new File(reportPath);
+         
         if(f.exists() && !f.isDirectory()) { 
-            try{
-                reportWriter.fw = new FileWriter(reportPath,true);
-                reportWriter.exists = true;
-                
-            }
-            catch(Exception ex){
-                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
-            }
+            return true;
         }
-        else {
-            try{
-                reportWriter.fw = new FileWriter(reportPath);
-                reportWriter.exists = false;
-                
-            }
-            catch(Exception ex){
-                logger.log(Level.WARNING, "Failed to determine Opentimestamsp report state", ex);
-            }
+        else if(!f.exists()){
+            return false;
         }
         
-        return reportWriter;
+        return false;
     }
     
-    //classes
-    private class ReportWriter{
-        FileWriter fw = null;
-        Boolean exists = false;
-    }
 }

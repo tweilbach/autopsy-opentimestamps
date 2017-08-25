@@ -13,7 +13,6 @@ package org.sleuthkit.autopsy.modules.opentimestamps;
 import com.eternitywall.ots.DetachedTimestampFile;
 import com.eternitywall.ots.Hash;
 import com.eternitywall.ots.OpenTimestamps;
-//import com.eternitywall.ots.OtsCli;
 import com.eternitywall.ots.Timestamp;
 import com.eternitywall.ots.Utils;
 import com.eternitywall.ots.op.OpSHA256;
