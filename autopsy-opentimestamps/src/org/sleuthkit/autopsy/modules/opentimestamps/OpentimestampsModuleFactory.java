@@ -76,7 +76,7 @@ public class OpentimestampsModuleFactory implements IngestModuleFactory{
     @Override
     public DataSourceIngestModule createDataSourceIngestModule(IngestModuleIngestJobSettings settings) {
 //        throw new UnsupportedOperationException();
-        return new OpentimestampsModule();
+        return new OpentimestampsModule(((OpentimestampsSettings) settings).getcalendarUrls(), ((OpentimestampsSettings) settings).getBtcConfPath());
     }
 
     @Override

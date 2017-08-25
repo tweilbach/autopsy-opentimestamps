@@ -40,10 +40,27 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     private IngestJobContext context;
     private String outputDirPath;
     //private String derivedFileInCaseDatabase;
-    private List<String> calendarURLs = new ArrayList<>();
+    
     private String algorithm = "SHA256";
     private String signatureFile = "";
+    private String btcConfPath = "";
+    private List<String> calendarURLs = new ArrayList<>();
+    
     Logger logger = IngestServices.getInstance().getLogger(moduleName);
+    
+    public OpentimestampsModule (List<String> calendarUrls, String btcConf){
+        try{
+            if(calendarUrls != null){
+                calendarURLs = calendarUrls;
+            }
+            if(!"".equals(btcConf) && btcConf != null){
+                btcConfPath = btcConf;
+            }
+            
+        } catch(Exception ex){
+            logger.log(Level.INFO, "Error reading Opentimestamps custom settings: {0}", ex);
+        }
+    }
     
     //Execution flow and setup
     @Override
@@ -62,39 +79,40 @@ public class OpentimestampsModule implements DataSourceIngestModule {
     @Override
     public ProcessResult process(Content dataSource, DataSourceIngestModuleProgress progressBar) {
         
+        
         //if (refCounter.get(context.getJobId()) == 1) {
-            try{
-                //my code here
-                // There will be two tasks: data source analysis and import of 
-                // the results of the analysis.
-                progressBar.switchToDeterminate(1);
-                //Get all the paths for data source
-                List<String> dataSourcePaths = getDataSourcePaths(dataSource);
-                
-                //logging
-                for (String path : dataSourcePaths){
-                    logger.log(Level.INFO, "This is the path: "+ path);
-                }
-                //Check if there is more than 1 to process.
-                if(dataSourcePaths.size() == 1){
-                    logger.log(Level.INFO, "About to get path");
-                    String dataSourcePath = dataSourcePaths.get(0);
-                    logger.log(Level.INFO, "About to get Process");
-                    otsProcess(dataSourcePath, dataSource);
-                    
-                } else if (dataSourcePaths.size() > 1){
-                    logger.log(Level.INFO, "We have more tahn one path");
-                    for (String path : dataSourcePaths){
-                        otsProcess(path, dataSource);
-                    }
-                }
-                
-                return ProcessResult.OK;
-            } catch (Exception ex) {
-                //Logger logger = IngestServices.getInstance().getLogger(moduleName);
-                logger.log(Level.SEVERE, "Failed to perform analysis", ex);  //NON-NLS
-                return ProcessResult.ERROR;
+        try{
+            //my code here
+            // There will be two tasks: data source analysis and import of 
+            // the results of the analysis.
+            progressBar.switchToDeterminate(1);
+            //Get all the paths for data source
+            List<String> dataSourcePaths = getDataSourcePaths(dataSource);
+
+            //logging
+            for (String path : dataSourcePaths){
+                logger.log(Level.INFO, "This is the path: "+ path);
             }
+            //Check if there is more than 1 to process.
+            if(dataSourcePaths.size() == 1){
+                logger.log(Level.INFO, "About to get path");
+                String dataSourcePath = dataSourcePaths.get(0);
+                logger.log(Level.INFO, "About to get Process");
+                otsProcess(dataSourcePath, dataSource);
+
+            } else if (dataSourcePaths.size() > 1){
+                logger.log(Level.INFO, "We have more tahn one path");
+                for (String path : dataSourcePaths){
+                    otsProcess(path, dataSource);
+                }
+            }
+
+            return ProcessResult.OK;
+        } catch (Exception ex) {
+            //Logger logger = IngestServices.getInstance().getLogger(moduleName);
+            logger.log(Level.SEVERE, "Failed to perform analysis", ex);  //NON-NLS
+            return ProcessResult.ERROR;
+        }
         //}
         
         //return ProcessResult.OK;
@@ -128,12 +146,9 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         //Adding the string back into a list since mutistamp takes a list as input - dirty I know
          List<String> dsFilePaths = new ArrayList<>();
          dsFilePaths.add(dataSourcePath);
-        //
+        
         String stampResult = OpentimestampsFunctions.multistamp(dsFilePaths, calendarURLs, calendarURLs.size(), null, algorithm);
 
-//            for (String message : otsReport.messages){
-//                logger.log(Level.INFO, message);
-//            }
         otsMessages.add(stampResult);
 
         createOtsReport(otsMessages,dataSourceName);
@@ -166,15 +181,6 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             
             createOtsReport(otsMessages, reportName);
             
-//            if (upgradeResult.toLowerCase().contains("timestamp not upgraded") && upgradeResult.toLowerCase().contains("timestamp is not complete")){
-//                return false;
-//            }
-//            else if (upgradeResult.toLowerCase().contains("timestamp is not complete") && !upgradeResult.toLowerCase().contains("timestamp is not complete")){
-//                return true;
-//            }
-//            else if (upgradeResult.toLowerCase().contains("timestamp has been successfully upgraded")){
-//                return true;
-//            }
         } catch (Exception ex){
             logger.log(Level.WARNING, "Failed to upgrade proof. Assuming it is not yet upgraded.", ex);
         }
@@ -186,7 +192,6 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             logger.log(Level.INFO, getOtsProofPath(path));
             //Second parameter to verify is null since we won't ever be seding the hash - we should have a reference to the original file
             String verifyResult = OpentimestampsFunctions.verify(getOtsProofPath(path));
-            
             
             logger.log(Level.INFO, verifyResult);
             
