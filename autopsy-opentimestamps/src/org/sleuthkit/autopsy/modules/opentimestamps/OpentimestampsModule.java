@@ -20,10 +20,12 @@ import org.sleuthkit.autopsy.ingest.IngestServices;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Image;
 import java.io.FileWriter;
+import org.sleuthkit.autopsy.casemodule.services.FileManager;
 
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import org.sleuthkit.datamodel.AbstractFile;
 /**
  *
  * @author Developer
@@ -85,10 +87,14 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             //my code here
             // There will be two tasks: data source analysis and import of 
             // the results of the analysis.
-            progressBar.switchToDeterminate(1);
-            //Get all the paths for data source
+            progressBar.switchToDeterminate(2);
+            
+            
+            progressBar.progress(1);
+            
+            //Collection  that will hold the datasourcepath of the indivudual file paths depending on the datasource type
             List<String> dataSourcePaths = getDataSourcePaths(dataSource);
-
+            
             //logging
             for (String path : dataSourcePaths){
                 logger.log(Level.INFO, "This is the path: "+ path);
@@ -101,11 +107,13 @@ public class OpentimestampsModule implements DataSourceIngestModule {
                 otsProcess(dataSourcePath, dataSource);
 
             } else if (dataSourcePaths.size() > 1){
-                logger.log(Level.INFO, "We have more tahn one path");
+                logger.log(Level.INFO, "We have more than one path");
                 for (String path : dataSourcePaths){
                     otsProcess(path, dataSource);
                 }
             }
+            
+            progressBar.progress(2);
 
             return ProcessResult.OK;
         } catch (Exception ex) {
@@ -127,7 +135,7 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             logger.log(Level.INFO, "OTS process - Upgrade returned false so we did not verify ");
         }
         else {
-            logger.log(Level.INFO, "OTS process - No proof exists so we'll create the firts proof ");
+            logger.log(Level.INFO, "OTS process - No proof exists so we'll create the first proof ");
             createOtsProof(dataSourcePath, dataSource.getName());
             logger.log(Level.INFO, "OTS process - Getting onfo on the proof we just created. ");
             infoOtsProof(dataSourcePath, dataSource.getName());
@@ -147,10 +155,15 @@ public class OpentimestampsModule implements DataSourceIngestModule {
          List<String> dsFilePaths = new ArrayList<>();
          dsFilePaths.add(dataSourcePath);
         
-        String stampResult = OpentimestampsFunctions.multistamp(dsFilePaths, calendarURLs, calendarURLs.size(), null, algorithm);
-
+        logger.log(Level.INFO, "About to stamp file: " + dataSourcePath);
+        for (String url: calendarURLs){
+            logger.log(Level.INFO, "Using Calendar server: " + url);
+        }
+        String stampResult = OpentimestampsFunctions.multistamp(dsFilePaths, null, 0, null, algorithm);
+        logger.log(Level.INFO, stampResult);
+        
         otsMessages.add(stampResult);
-
+        logger.log(Level.INFO, "createOtsProof - Creating report.");
         createOtsReport(otsMessages,dataSourceName);
        
     }
@@ -290,19 +303,22 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             logger.log(Level.INFO, dataSource.getName());
             logger.log(Level.INFO, dataSource.getUniquePath());
             logger.log(Level.INFO, dataSource.toString());
-        } else if(dataSource instanceof File){
-            File file = (File) dataSource;
-            String dataSourcePath = file.getPath();
-            dsFilePaths.add(dataSourcePath);
-            //Some logging
-            logger.log(Level.INFO, dataSource.getName());
-            logger.log(Level.INFO, dataSource.getUniquePath());
-            logger.log(Level.INFO, dataSource.toString());
         } else {
             //Some logging
             logger.log(Level.INFO, dataSource.getName());
             logger.log(Level.INFO, dataSource.getUniquePath());
             logger.log(Level.INFO, dataSource.toString());
+            logger.log(Level.INFO, "Datasource is not an image file - multiple file paths to process");
+            FileManager fileManager = Case.getCurrentCase().getServices().getFileManager();
+            //finding ALL files "%"
+            List<AbstractFile> files = fileManager.findFiles(dataSource, "%");
+            for (AbstractFile file: files){
+                //Check if it is a file since we cant't stamp a directory
+                if(file.isFile()){
+                    dsFilePaths.add(file.getLocalAbsPath());
+                    logger.log(Level.INFO, "Found file in logical file set - this is the path: "+ file.getLocalAbsPath());
+                }
+            }
         }
         
         return dsFilePaths;

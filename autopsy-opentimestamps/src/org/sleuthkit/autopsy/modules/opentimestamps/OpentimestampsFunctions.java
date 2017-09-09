@@ -29,13 +29,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestServices;
 
 public class OpentimestampsFunctions {
     
     private static final String moduleName = OpentimestampsModuleFactory.getModuleName();
-    Logger logger = IngestServices.getInstance().getLogger(moduleName);
+    private static Logger logger = IngestServices.getInstance().getLogger(moduleName);
     
     private static HashMap<String,String> readSignature(String file) throws Exception {
         Path path = Paths.get(file);
@@ -76,7 +77,7 @@ public class OpentimestampsFunctions {
                 return "No valid signature file";
             }
         }
-
+        
         // Make list of detached files
         HashMap<String, DetachedTimestampFile> mapFiles = new HashMap<>();
         for (String argsFile : argsFiles){
