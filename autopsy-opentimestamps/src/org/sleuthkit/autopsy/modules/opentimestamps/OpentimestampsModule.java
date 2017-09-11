@@ -96,9 +96,9 @@ public class OpentimestampsModule implements DataSourceIngestModule {
             List<String> dataSourcePaths = getDataSourcePaths(dataSource);
             
             //logging
-            for (String path : dataSourcePaths){
-                logger.log(Level.INFO, "This is the path: "+ path);
-            }
+            //for (String path : dataSourcePaths){
+            //    logger.log(Level.INFO, "This is the path: "+ path);
+            //}
             //Check if there is more than 1 to process.
             if(dataSourcePaths.size() == 1){
                 logger.log(Level.INFO, "About to get path");
@@ -150,20 +150,20 @@ public class OpentimestampsModule implements DataSourceIngestModule {
         //Logger logger = IngestServices.getInstance().getLogger(moduleName);
         
         //Maybe do some debug logging here
-        logger.log(Level.INFO, dataSourcePath);
+        //logger.log(Level.INFO, dataSourcePath);
         //Adding the string back into a list since mutistamp takes a list as input - dirty I know
          List<String> dsFilePaths = new ArrayList<>();
          dsFilePaths.add(dataSourcePath);
         
-        logger.log(Level.INFO, "About to stamp file: " + dataSourcePath);
-        for (String url: calendarURLs){
-            logger.log(Level.INFO, "Using Calendar server: " + url);
-        }
+        //logger.log(Level.INFO, "About to stamp file: " + dataSourcePath);
+        //for (String url: calendarURLs){
+        //    logger.log(Level.INFO, "Using Calendar server: " + url);
+        //}
         String stampResult = OpentimestampsFunctions.multistamp(dsFilePaths, null, 0, null, algorithm);
-        logger.log(Level.INFO, stampResult);
+        //logger.log(Level.INFO, stampResult);
         
         otsMessages.add(stampResult);
-        logger.log(Level.INFO, "createOtsProof - Creating report.");
+        //logger.log(Level.INFO, "createOtsProof - Creating report.");
         createOtsReport(otsMessages,dataSourceName);
        
     }

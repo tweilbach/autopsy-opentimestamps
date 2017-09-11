@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.logging.Level;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestServices;
 
@@ -206,9 +205,10 @@ public class OpentimestampsFunctions {
             }
 
         } catch (IOException e) {
-            return "No valid file";
+            return "No valid file: " + e.toString();
         } catch (Exception e) {
-            return "Shrink error";
+            return "Shrink error: " + e.toString();
         }
     }
+    
 }

@@ -31,7 +31,6 @@ public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSetting
         initComponents();
         this.settings = settings;
         this.calendarTextArea.setText(settings.getCalendarString());
-        this.btcConfTextArea.setText(settings.getBtcConfPath());
     }
     
     public void setObject(Object bean) {
@@ -55,8 +54,6 @@ public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSetting
         jPanel1 = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        btcConfTextArea = new javax.swing.JTextField();
         jScrollPane3 = new javax.swing.JScrollPane();
         calendarTextArea = new javax.swing.JTextArea();
 
@@ -68,20 +65,6 @@ public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSetting
         add(jPanel1, java.awt.BorderLayout.PAGE_END);
 
         jLabel1.setText("Custom calendar server URLs");
-
-        jLabel2.setText("bitcoin.conf location");
-
-        btcConfTextArea.setToolTipText("Leave empty for default");
-        btcConfTextArea.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btcConfTextAreaActionPerformed(evt);
-            }
-        });
-        btcConfTextArea.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyTyped(java.awt.event.KeyEvent evt) {
-                btcConfTextAreaKeyTyped(evt);
-            }
-        });
 
         calendarTextArea.setColumns(20);
         calendarTextArea.setRows(5);
@@ -100,10 +83,8 @@ public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSetting
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jLabel2)
                     .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 249, Short.MAX_VALUE)
-                    .addComponent(btcConfTextArea))
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 249, Short.MAX_VALUE))
                 .addContainerGap(46, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
@@ -113,27 +94,15 @@ public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSetting
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(15, 15, 15)
-                .addComponent(jLabel2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btcConfTextArea, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(39, Short.MAX_VALUE))
+                .addContainerGap(94, Short.MAX_VALUE))
         );
 
         add(jPanel4, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btcConfTextAreaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btcConfTextAreaActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btcConfTextAreaActionPerformed
-
     private void calendarTextAreaKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_calendarTextAreaKeyTyped
         settings.setCalendarString(calendarTextArea.getText());
     }//GEN-LAST:event_calendarTextAreaKeyTyped
-
-    private void btcConfTextAreaKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_btcConfTextAreaKeyTyped
-        settings.setBtcConfPath(btcConfTextArea.getText());
-    }//GEN-LAST:event_btcConfTextAreaKeyTyped
     
     @Override
     public IngestModuleIngestJobSettings getSettings() {
@@ -142,13 +111,11 @@ public class OpentimestampsJobSettingsPanel extends IngestModuleIngestJobSetting
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextField btcConfTextArea;
     private javax.swing.JTextArea calendarTextArea;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JFileChooser jFileChooser1;
     private javax.swing.JFileChooser jFileChooser2;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLayeredPane jLayeredPane1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
