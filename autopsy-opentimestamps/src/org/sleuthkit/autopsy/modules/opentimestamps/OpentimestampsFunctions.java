@@ -7,7 +7,7 @@ package org.sleuthkit.autopsy.modules.opentimestamps;
 
 /**
  *
- * @author Developer
+ * @author Thomas Weilbach based heavily on java-opentimestamps OtsCli.java by luca on 25/02/2017.
  */
 
 import com.eternitywall.ots.DetachedTimestampFile;
